@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $_SESSION['usuario_nombre'] = $usuario->nombre;
       $_SESSION['usuario_rol'] = $usuario->rol;
       if ($usuario->rol === 'profesor') {
-        header('Location: addCurso.php');
+        header('Location: addRoles.php');
       } elseif ($usuario->rol === 'alumno') {
         header('Location: vista_alumno.php');
       } else {

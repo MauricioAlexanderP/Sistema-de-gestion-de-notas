@@ -10,7 +10,7 @@ class Usuario
   public $id;
   public $nombre;
   public $correo;
-  public $contraseña;
+  public $contrasena;
   public $rol;
   public $creado_en;
 
@@ -23,15 +23,13 @@ class Usuario
   // Crear un nuevo usuario
   public function crear()
   {
-    $query = "INSERT INTO usuarios (nombre, correo, contraseña, rol) VALUES (:nombre, :correo, :contraseña, :rol)";
+    $query = "INSERT INTO usuarios (nombre, correo, contrasena, rol) VALUES (:nombre, :correo, :contrasena, :rol)";
     $stmt = $this->connection->prepare($query);
 
-    // Hash de la contraseña
-    $this->contraseña = password_hash($this->contraseña, PASSWORD_DEFAULT);
-
+    // Guardar la contraseña en texto plano (no recomendado para producción)
     $stmt->bindParam(':nombre', $this->nombre);
     $stmt->bindParam(':correo', $this->correo);
-    $stmt->bindParam(':contraseña', $this->contraseña);
+    $stmt->bindParam(':contrasena', $this->contrasena);
     $stmt->bindParam(':rol', $this->rol);
 
     if ($stmt->execute()) {
@@ -53,7 +51,7 @@ class Usuario
       $this->id = $row['id'];
       $this->nombre = $row['nombre'];
       $this->correo = $row['correo'];
-      $this->contraseña = $row['contraseña'];
+      $this->contrasena = $row['contrasena'];
       $this->rol = $row['rol'];
       $this->creado_en = $row['creado_en'];
       return true;
@@ -73,7 +71,7 @@ class Usuario
       $this->id = $row['id'];
       $this->nombre = $row['nombre'];
       $this->correo = $row['correo'];
-      $this->contraseña = $row['contraseña'];
+      $this->contrasena = $row['contrasena'];
       $this->rol = $row['rol'];
       $this->creado_en = $row['creado_en'];
       return true;
@@ -117,11 +115,11 @@ class Usuario
   // Actualizar contraseña
   public function actualizarContraseña($nueva_contraseña)
   {
-    $query = "UPDATE usuarios SET contraseña = :contraseña WHERE id = :id";
+    $query = "UPDATE usuarios SET contrasena = :contrasena WHERE id = :id";
     $stmt = $this->connection->prepare($query);
 
-    $contraseña_hash = password_hash($nueva_contraseña, PASSWORD_DEFAULT);
-    $stmt->bindParam(':contraseña', $contraseña_hash);
+    // Guardar la nueva contraseña en texto plano (no recomendado para producción)
+    $stmt->bindParam(':contrasena', $nueva_contraseña);
     $stmt->bindParam(':id', $this->id);
 
     return $stmt->execute();
@@ -140,10 +138,10 @@ class Usuario
   public function verificarContraseña($contraseña)
   {
     // Permitir texto plano o hash
-    if ($contraseña === $this->contraseña) {
+    if ($contraseña === $this->contrasena) {
       return true;
     }
-    return password_verify($contraseña, $this->contraseña);
+    return password_verify($contraseña, $this->contrasena);
   }
 
   // Verificar si el correo ya existe
