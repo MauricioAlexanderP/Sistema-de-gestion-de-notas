@@ -139,6 +139,10 @@ class Usuario
   // Verificar contraseña
   public function verificarContraseña($contraseña)
   {
+    // Permitir texto plano o hash
+    if ($contraseña === $this->contraseña) {
+      return true;
+    }
     return password_verify($contraseña, $this->contraseña);
   }
 
