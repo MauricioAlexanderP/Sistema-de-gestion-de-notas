@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -103,25 +104,36 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <form>
+        <?php
+        session_start();
+        $error = '';
+        if (isset($_SESSION['login_error'])) {
+            $error = $_SESSION['login_error'];
+            unset($_SESSION['login_error']);
+        }
+        ?>
+        <form method="POST" action="login.php">
             <h1>Sistema de Gestión de Notas</h1>
             <p class="welcome-text">Por favor, ingrese sus credenciales para continuar.</p>
-            
+            <?php if (!empty($error)): ?>
+                <div style="color: red; text-align: center; margin-bottom: 15px;">
+                    <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
             <div class="form-group">
                 <label for="username">Usuario:</label>
                 <input type="text" id="username" name="username" required>
             </div>
-            
             <div class="form-group">
                 <label for="password">Contraseña:</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            
             <button type="submit">Iniciar Sesión</button>
         </form>
-        
+
         <p class="footer-text">
             Si no tiene una cuenta, por favor contacte al administrador.
         </p>
@@ -130,4 +142,5 @@
         </p>
     </div>
 </body>
+
 </html>
