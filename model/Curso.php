@@ -1,5 +1,5 @@
 <?php
-require_once 'Database.php';
+require_once __DIR__ . '/Database.php';
 
 class Curso
 {
@@ -17,6 +17,109 @@ class Curso
   {
     $this->db = new Database();
     $this->connection = $this->db->getConnection();
+  }
+
+  // Validar formato de código: AAA-123 (3-5 letras mayúsculas, guión, 3 dígitos)
+  public function validarFormatoCodigo($codigo)
+  {
+    return preg_match('/^[A-Z]{3,5}-\d{3}$/', $codigo) === 1;
+  }
+
+  // Generar código basado en el nombre del curso: prefijo de letras + contador de 3 dígitos
+  public function generarCodigoDesdeNombre($nombre)
+  {
+    // Normalizar acentos/ñ a ASCII y quedarnos solo con letras A-Z y espacios
+    $map = [
+      'á' => 'a',
+      'é' => 'e',
+      'í' => 'i',
+      'ó' => 'o',
+      'ú' => 'u',
+      'ü' => 'u',
+      'ñ' => 'n',
+      'Á' => 'A',
+      'É' => 'E',
+      'Í' => 'I',
+      'Ó' => 'O',
+      'Ú' => 'U',
+      'Ü' => 'U',
+      'Ñ' => 'N'
+    ];
+    $nombre_ascii = strtr($nombre, $map);
+    $nombre_ascii = strtoupper($nombre_ascii);
+    $nombre_limpio = preg_replace('/[^A-Z\s]/', '', $nombre_ascii);
+
+    // Obtener letras del nombre (iniciales/primeras letras) y formar prefijo de 3 a 5 letras
+    $palabras = preg_split('/\s+/', trim($nombre_limpio));
+    $prefijo = '';
+    foreach ($palabras as $palabra) {
+      if ($palabra !== '') {
+        $prefijo .= substr($palabra, 0, 1);
+      }
+      if (strlen($prefijo) >= 5) {
+        break;
+      }
+    }
+
+    if (strlen($prefijo) < 3) {
+      // Completar con letras de la primera palabra, si es necesario
+      $base = preg_replace('/[^A-Z]/', '', $nombre_limpio);
+      $prefijo = substr($base . 'XXXX', 0, 3);
+    }
+
+    // Limitar a 5 letras máximo
+    $prefijo = substr($prefijo, 0, 5);
+
+    // Buscar sufijo máximo existente para el prefijo
+    $like = $prefijo . '-%';
+    $query = "SELECT codigo FROM cursos WHERE codigo LIKE :like";
+    $stmt = $this->connection->prepare($query);
+    $stmt->bindParam(':like', $like);
+    $stmt->execute();
+    $codigos = $stmt->fetchAll();
+
+    $max = 0;
+    foreach ($codigos as $row) {
+      if (preg_match('/^' . preg_quote($prefijo, '/') . '-(\d{3})$/', $row['codigo'], $m)) {
+        $num = intval($m[1], 10);
+        if ($num > $max) {
+          $max = $num;
+        }
+      }
+    }
+
+    $nuevo = $max + 1;
+    if ($nuevo > 999) {
+      // Si se excede, usar prefijo truncado a 4 y reiniciar conteo
+      $prefijo = mb_substr($prefijo, 0, 4, 'UTF-8');
+      $like = $prefijo . '-%';
+      $stmt = $this->connection->prepare($query);
+      $stmt->bindParam(':like', $like);
+      $stmt->execute();
+      $codigos = $stmt->fetchAll();
+      $max = 0;
+      foreach ($codigos as $row) {
+        if (preg_match('/^' . preg_quote($prefijo, '/') . '-(\d{3})$/', $row['codigo'], $m)) {
+          $num = intval($m[1], 10);
+          if ($num > $max) {
+            $max = $num;
+          }
+        }
+      }
+      $nuevo = $max + 1;
+      if ($nuevo > 999) {
+        // Fallback: usar un número aleatorio disponible
+        for ($i = 1; $i <= 999; $i++) {
+          $candidato = sprintf('%s-%03d', $prefijo, $i);
+          if (!$this->codigoExiste($candidato)) {
+            return $candidato;
+          }
+        }
+        throw new Exception('No hay códigos disponibles para el prefijo: ' . $prefijo);
+      }
+    }
+
+    return sprintf('%s-%03d', $prefijo, $nuevo);
   }
 
   // Crear un nuevo curso
